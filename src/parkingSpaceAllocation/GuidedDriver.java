@@ -3,6 +3,7 @@ package parkingSpaceAllocation;
 
 import java.util.ArrayList;
 
+import fireFighters_MAS.Fire;
 import repast.simphony.context.Context;
 import repast.simphony.engine.environment.RunEnvironment;
 import repast.simphony.engine.schedule.ScheduledMethod;
@@ -15,20 +16,20 @@ public class GuidedDriver implements  Driver{
 	private int id;
 	private int[] destination;
 	//private int arrival;   //ATTENTION, the arrival should be set in the "grid" variable, I'm not sure how to do that for now, should be similar to parking agent
-	private int arrivalTime; //Should be which minute the driver arrives
+	private  int arrivalTime;
 	private int maxPrice;
 	private int durationOfStay; //Should be in minutes
 	private int time;
 	private int timeArrivedInParking;
 	private int maxWalkingDistance;
 	private int day;
-	private boolean cheap;  //if the driver is cheap, the proportion of utility lost about the price he has to pay is 1.5 higher
-	private boolean lazy;   //if the driver is lazy, the proportion of utility lost about the walking distance is 1.5 higher
+	private boolean cheap=false;  //if the driver is cheap, the proportion of utility lost about the price he has to pay is 1.5 higher
+	private boolean lazy=false;   //if the driver is lazy, the proportion of utility lost about the walking distance is 1.5 higher
 	private boolean parked;
 	private ParkingAgent optimalParking;
 	private Context<Object> context;
 	
-	public GuidedDriver(Context<Object> context, Grid<Object> grid, int ID, int desX, int desY, int arrivalT, int maxPrice, int duration, int maxWalking, int DAY, boolean cheapOrNot, boolean lazyOrNot){
+	public GuidedDriver(Context<Object> context, Grid<Object> grid, int ID, int desX, int desY, int initT, int maxPrice, int duration, int maxWalking, int DAY, int timeinSys){
 		Parameters params = RunEnvironment.getInstance().getParameters();
 		
 		this.context = context;
@@ -37,14 +38,17 @@ public class GuidedDriver implements  Driver{
 		this.destination = new int[2];
 		this.destination[0] = desX;
 		this.destination[1] = desY;
-		this.arrivalTime = arrivalT;
-		this.time = arrivalT;
+		this.time = initT;
 		this.maxPrice = maxPrice;
 		this.durationOfStay = duration;
 		this.maxWalkingDistance = maxWalking;
 		this.day = DAY;
-		this.cheap = cheapOrNot;
-		this.lazy = lazyOrNot;
+		double rand1 = Math.random();
+		double rand2 = Math.random();
+		if (rand1 < 0.5)
+			this.cheap = true;
+		if (rand2 < 0.5)
+			this.lazy = true;
 		this.parked = false;
 	}
 	
@@ -63,16 +67,16 @@ public class GuidedDriver implements  Driver{
 		}
 		else {
 			//ATTENTION, I use this to find the optimal parking, but this is really not the way it should be done!
-			Knowledge k; 
 			if(optimalParking == null)
-				this.findOptimalParking(k);
+				this.findOptimalParking();
 			
 			if(!parked){
 				for(int count=0; count<3; count++) //We assume for now that the agent can move at three squares per minutes (tic)
 					this.move(this.getDirectionToParking(optimalParking));
 			}
 			
-			if(grid.getLocation(this).getX() == optimalParking.getPosX() && grid.getLocation(this).getY() == optimalParking.getPosY()){ //If the driver just arrived to his parking
+			Position p = optimalParking.getKnowledge().getPosition(optimalParking);
+			if(grid.getLocation(this).getX() == p.getX() && grid.getLocation(this).getY() == p.getY()){ //If the driver just arrived to his parking
 				if(optimalParking.usedcapacity >= optimalParking.maximumcapacity) {
 					this.optimalParking = null;
 					break;
@@ -101,12 +105,9 @@ public class GuidedDriver implements  Driver{
 	}
 	
 	//Returns the utility of that "optimal parking", so that if the parking is not good enough, we can set a condition so that the drivers decides to take his chance and find a city park
-	public double findOptimalParking(Knowledge k){  //ATTENTION, I assume that we will set a "basic knowledge" at the beginning with the data for all parkings
-		int utility = 0;						  		//Looks like what we want to do...
-		ArrayList<ParkingAgent> parkings = new ArrayList<>();
-		//ATTENTION, the next line should be changed, idk how to call all of the parkings
-		parkings = k.getAllParkings(); 
-		int distance, pricePerMinute, price, timeAtPark;
+	public double findOptimalParking(){  //ATTENTION, I assume that we will set a "basic knowledge" at the beginning with the data for all parkings
+		int utility = 0;
+		int distance, pricePerMinute, timeAtPark;
 		double maxUtility = Double.NEGATIVE_INFINITY, 
 				tempUtility, walkingUtility, priceUtility, price;
 		
@@ -116,18 +117,29 @@ public class GuidedDriver implements  Driver{
 		if (this.lazy)
 			lazyEmphasis = 1.5;
 		
-		for (ParkingAgent par : parkings) { //loops over all parkings
-			tempUtility=0;
-			distance = Tools.getDistanceTo(par.getPosX(), par.getPosY(), this.destination[0], this.destination[1]); //Note that you need the getGrid() function in ParkingAgent (I put it there)
-			walkingUtility = (Math.pow(distance, 2)) / 10;  //we substract the distance he will have to walk to the square divided by 10
-			timeAtPark = this.time + distance/3;
-			price = (double) par.getPrice(day, timeAtPark, (timeAtPark + this.durationOfStay)); //Can be useful to check that I didn't make any mistakes here
-			priceUtility = price / 3;
-			tempUtility -= (cheapEmphasis*priceUtility) + (lazyEmphasis*walkingUtility); //Gives the lazy and cheap emphasis on the utility
-			if(tempUtility > maxUtility && par.maximumcapacity > par.usedcapacity){
-				this.optimalParking = par;
-				maxUtility = tempUtility;
-			}
+		for (int i=0; i < grid.getDimensions().getHeight(); i++)  //loops over all grid
+			for (int j=0; j < grid.getDimensions().getWidth(); j++) {
+				Iterable<Object> objects = grid.getObjectsAt(i, j);
+
+				for (Object obj : objects)
+				{
+					if(obj.getClass() == ParkingAgent.class)
+					{
+						ParkingAgent par = (ParkingAgent) obj;
+						tempUtility=0;
+						Position p = par.getKnowledge().getPosition(par);
+						distance = Tools.getDistanceTo(p.getX(), p.getY(), this.destination[0], this.destination[1]); //Note that you need the getGrid() function in ParkingAgent (I put it there)
+						walkingUtility = (Math.pow(distance, 2)) / 10;  //we substract the distance he will have to walk to the square divided by 10
+						timeAtPark = this.time + distance/3;
+						price = (double) par.getPrice(day, timeAtPark, (timeAtPark + this.durationOfStay)); //Can be useful to check that I didn't make any mistakes here
+						priceUtility = price / 3;
+						tempUtility -= (cheapEmphasis*priceUtility) + (lazyEmphasis*walkingUtility); //Gives the lazy and cheap emphasis on the utility
+						if(tempUtility > maxUtility && par.maximumcapacity > par.usedcapacity){
+							this.optimalParking = par;
+							maxUtility = tempUtility;
+						}
+					}
+				}
 		}
 		return maxUtility;
 	}
@@ -137,8 +149,8 @@ public class GuidedDriver implements  Driver{
 		
 		int x = this.grid.getLocation(this).getX();
 		int y = this.grid.getLocation(this).getY();
-		int xF = par.getGrid().getLocation().getX();  //Parking's x coordinate
-		int yF = par.getGrid().getLocation().getY();  //Parking's y coordinate
+		int xF = p.getX();  //Parking's x coordinate
+		int yF = p.getY();  //Parking's y coordinate
 		int direction = -1;
 		if (x - xF < 0) // It's somewhere to the East
 		{
@@ -159,19 +171,5 @@ public class GuidedDriver implements  Driver{
 			else { direction = 5; } // South-West
 		}
 		return direction;
-	}
-
-	@Override
-	public void findOptimalParking() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void GuidedDriver(parkingSpaceAllocation.Context<Object> context, parkingSpaceAllocation.Grid<Object> grid,
-			int ID, int desX, int desY, int arrivalT, int maxPrice, int duration, int maxWalking, int DAY,
-			boolean cheapOrNot, boolean lazyOrNot) {
-		// TODO Auto-generated method stub
-		
 	}
 }
