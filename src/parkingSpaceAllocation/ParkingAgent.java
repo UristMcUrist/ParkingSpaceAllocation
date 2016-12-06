@@ -93,6 +93,12 @@ public class ParkingAgent
 		p.updateModel(knowledge, lastweek,this, cycle);
 	}
 	
+	
+	public Knowledge getKnowledge()
+	{
+		return knowledge;
+	}
+	
 	/** Search the whole grid for foresters, and all of them as contacts */
 	private void addAllContacts()
 	{

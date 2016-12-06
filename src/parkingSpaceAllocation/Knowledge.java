@@ -3,8 +3,6 @@ package parkingSpaceAllocation;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import fireFighters_MAS.Position;
-
 public class Knowledge
 {
 	// Local variables declaration
@@ -18,6 +16,11 @@ public class Knowledge
 		double[] d = revenue.get(p);
 		d[day] += a;
 		revenue.put(p, d);
+	}
+	
+	public Position getPosition(ParkingAgent p)
+	{
+		return parkingAgents.get(p);
 	}
 	public PricingModel getPricingmodel(ParkingAgent p)
 	{
