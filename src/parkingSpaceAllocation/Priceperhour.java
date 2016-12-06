@@ -103,9 +103,9 @@ public class Priceperhour implements Price{
 	{
 		String s="";
 		s+="********************************************************************\n";
-		s+="*\t " +priceequation[2] +"\t Euro(s) per hour \t\t*\n";
-		s+="*\t Minimal price to pay: \t"+priceequation[1]+"\t\t*\n";
-		s+="*\t Maximal price to pay: \t"+priceequation[0]+"\t\t*\n";
+		s+="*\t " +priceequation[2] +"\t Euros(s) per hour \t\t*\n";
+		s+="*\t Minimal price to pay: \t"+priceequation[0]+"\t\t*\n";
+		s+="*\t Maximal price to pay: \t"+priceequation[1]+"\t\t*\n";
 		s+="*\t Price change per hour:\t"+priceequation[3]+"\t\t*\n";
 		s+="********************************************************************\n";
 		return s;

@@ -10,7 +10,7 @@ import repast.simphony.parameter.Parameters;
 import repast.simphony.random.RandomHelper;
 import repast.simphony.space.grid.Grid;
 
-public class ParkingAgent
+public class ParkingAgent implements ParkingAgencies
 {
 	// Local variables definition
 	private Grid<Object> grid;
@@ -62,7 +62,7 @@ public class ParkingAgent
 		
 	}
 
-	@ScheduledMethod(start = 1, interval = 24*7)
+	@ScheduledMethod(start = 1, interval = 24*60)
 	public void nextDay()
 	{
 		if(day<7)
@@ -170,6 +170,12 @@ public class ParkingAgent
 		return s;
 	}
 	
+	
+	@ScheduledMethod(start = 24*60*7*5 ,interval = 24*60*7*5 )
+	public void updateStatus()
+	{
+		System.out.println(toString());
+	}
 }
 	
 	
