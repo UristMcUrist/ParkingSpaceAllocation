@@ -10,7 +10,7 @@ import repast.simphony.parameter.Parameters;
 import repast.simphony.random.RandomHelper;
 import repast.simphony.space.grid.Grid;
 
-public class ParkingAgent
+public class ParkingAgent implements ParkingAgencies
 {
 	// Local variables definition
 	private Grid<Object> grid;
