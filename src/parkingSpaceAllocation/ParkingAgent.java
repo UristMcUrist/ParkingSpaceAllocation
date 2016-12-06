@@ -9,6 +9,7 @@ import repast.simphony.engine.schedule.ScheduledMethod;
 import repast.simphony.parameter.Parameters;
 import repast.simphony.random.RandomHelper;
 import repast.simphony.space.grid.Grid;
+import repast.simphony.space.grid.GridPoint;
 
 public class ParkingAgent implements ParkingAgencies
 {
@@ -175,6 +176,12 @@ public class ParkingAgent implements ParkingAgencies
 	public void updateStatus()
 	{
 		System.out.println(toString());
+	}
+	public double getDisdtance(Position driverposition) {
+		// TODO Auto-generated method stub
+		
+		Position knowposition = knowledge.getPosition(this);
+		return grid.getDistanceSq(new GridPoint(knowposition.getX(), knowposition.getY()),new GridPoint(driverposition.getX(),driverposition.getY()));
 	}
 }
 	
